@@ -1,47 +1,52 @@
 #!/usr/bin/python2.7
 # -*- coding: UTF-8 -*-
-###/usr/lib64/python2.7/site-packages/aliyun_python_sdk_core-2.1.0-py2.7.egg/aliyunsdkcore/client.py
-from aliyunsdkcore import client
+# 执行前下载 aliyun open api sdk(https://pypi.python.org/pypi)
+# 修改endpoints.xml中的region_id和Rds域字段
+# ------传入参数命名规则(忽略大小写)
+# dbInstanceClass: 实例规格
+# engine: RDS类型(取值MySQL, SQLServer, PostgresSQL, PPAS)
+# engineVersion: 数据库版本号
+# dbInstanceStorage: 数据库存储
+# dbInstanceNetType: 网络连接类型
+# dbInstanceDescription: 实例描述
+# securityIPList: RDS白名单
+# vpcId: VPC ID
+# vSwitchId: vSwitch ID
+# privateIPAddress: 私网IP地址
+# dbInstanceId: RDS实例名
+# dbName: 数据库名称
+
 from aliyunsdkrds.request.v20140815 import DescribeBackupsRequest
 from aliyunsdkrds.request.v20140815 import DescribeDBInstanceAttributeRequest
 from aliyunsdkrds.request.v20140815 import CreateUploadPathForSQLServerRequest 
 from aliyunsdkrds.request.v20140815 import DescribeRegionsRequest
-from aliyunsdkrds.request.v20140815 import DescribeDBInstancesRequest 
+from aliyunsdkrds.request.v20140815 import DescribeDBInstancesRequest
+from aliyunsdkrds.request.v20140815 import CreateReadOnlyDBInstanceRequest
+from AliClient import AliClient
 import MySQLdb as db
 import json
 import urllib
 import types
 import os
+import sys
 import time
 
-class RDSClient(object):
+class RDSClient(AliClient):
     client_conf = {}
 
-    def __init__(self):
-        args = []
-        with open("rds.ini") as conf:
-            print "Loading configuration...."
-            for line in conf.readlines():
-                if not line.startswith("#"):
-                    arg = line.strip("\n").split("=")
-                    args.append(arg)
-            print args
-            self.client_conf = dict(args)
-            conf.close()
-        self.clt = client.AcsClient(self.client_conf.get("access_key"),\
-        self.client_conf.get("access_secret"),\
-        self.client_conf.get("region"))
+    def __init__(self, confFile):
+        super(RDSClient,self).__init__(confFile)
 
     def _init_conn(self):
         with db.connect(host = self.client_conf.get("dbaas_host"),\
-        port =int(host = self.client_conf.get("dbaas_port")),\
+        port =int(self.client_conf.get("dbaas_port")),\
         user = self.client_conf.get("dbaas_user"),\
         passwd = self.client_conf.get("dbaas_password"),db = "dbaas") as cur:
             print "Initializing database connections,set charset to utf8...\nVersion of client library: %s" %(db.get_client_info())
             cur.execute("set names utf8")
             return cur
 
-    def _getName(self,instance_name):
+    def _getName(self,dbInstanceId):
         cur = self._init_conn()
         stat = "select ins_name from cust_instance where is_deleted=0 and conn_addr = \'"+instance_name+"\' or ins_name = \'"+instance_name+"\' limit 1;"
         print "%s" %stat
@@ -50,7 +55,7 @@ class RDSClient(object):
         cur.close()
         return ins_name
 
-    def describeDBInstance(self,name):
+    def DescribeDBInstance(self,dbInstanceId):
         ins_name = self._getName(name)
         request = DescribeDBInstanceAttributeRequest.DescribeDBInstanceAttributeRequest()
         request.set_accept_format('json')
@@ -58,7 +63,7 @@ class RDSClient(object):
         s = json.loads(self.clt.do_action(request))
         print s
 
-    def describeBackups(self,name,start_time,end_time):
+    def DescribeBackups(self,dbInstanceId,start_time,end_time):
         ins_name = self._getName(name)
         request = DescribeBackupsRequest.DescribeBackupsRequest()
         request.set_accept_format('json')
@@ -71,21 +76,31 @@ class RDSClient(object):
             result.append(item['BackupDownloadURL'])
         return result
 
-    def describeDBInstances(self):
+    def DescribeDBInstances(self):
         request = DescribeDBInstancesRequest.DescribeDBInstancesRequest() 
         request.set_accept_format('json')
         print self.clt.do_action(request)
             
-    def createUploadPathForSQLServer(self, ins_name,db_name):
+    def CreateUploadPathForSQLServer(self, dbInstanceId,dbName):
         request = CreateUploadPathForSQLServerRequest.CreateUploadPathForSQLServerRequest() 
         request.set_accept_format('json')
         request.set_DBInstanceId(ins_name)
         request.set_DBName(db_name)
         print self.clt.do_action(request)
 
-    def describeRegions(self):
+    def DescribeRegions(self):
         request = DescribeRegionsRequest.DescribeRegionsRequest()
         request.set_accept_format('json')
+        print self.clt.do_action(request)
+
+    def CreateReadOnlyDBInstance(self,dbInstanceId,dbInstanceClass,dbInstanceStorage,engineVersion="5.6"):
+        ins_name = self._getName(dbInstanceId)
+        request = CreateReadOnlyDBInstanceRequest.CreateReadOnlyDBInstanceRequest()
+        request.set_accept_format('json')
+        request.set_DBInstanceId(ins_name)
+        request.set_EngineVrsion(version)
+        request.set_DBInstanceClass(ins_cls)
+        request.set_DBInstaceStorage(storage)
         print self.clt.do_action(request)
 
 def downloadHook(block_read,block_size,total_size):
@@ -110,8 +125,3 @@ def dowloadFromURLs(urlList):
             urllib.urlretrieve(url,file_name,reporthook=downloadHook)
     else:
         print "Invalid argument!"
-
-if __name__=='__main__':
-    client = RDSClient()
-    client.describeRegions()
-    client.createUploadPathForSQLServer('rds5708ip684n4267170','tt1')

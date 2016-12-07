@@ -27,9 +27,9 @@ class AliClient(object):
                     args.append(arg)
             self.client_conf = dict(args)
             conf.close()
-        self.clt = client.AcsClient(self.client_conf.get("access_key"),\
-        self.client_conf.get("access_secret"),\
-        self.client_conf.get("region"))
+        self.clt = client.AcsClient(self.client_conf.get("AccessKeyId"),\
+        self.client_conf.get("AccessKeySecret"),\
+        self.client_conf.get("RegionId"))
 
     def doAction(self, paras):
         action = paras["action"]

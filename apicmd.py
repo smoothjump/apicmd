@@ -22,7 +22,7 @@ def getOptions(usage):
     parser.add_argument("-j", "--json", dest = 'parameters', action="store",\
         help="json string", default = "{\"action\":\"DescribeRegions\"}")
     parser.add_argument("-f", '--conf', dest = 'conf', action="store",\
-        help="configuration file", default = "rds.ini")
+        help="configuration file", default = "aliapi.ini")
     parser.add_argument("-o", "--ouput", dest = 'output', action="store",\
         help="outfile")
     parser.add_argument("-p", "--product", dest = 'product', action="store",\

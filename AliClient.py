@@ -44,7 +44,7 @@ class AliClient(object):
                 val.append(paras[i])
             try:
                 apply(func,val)
-            except KeyError as e:
+            except KeyError:
                 print "Your parameter list has some problem(s), pls re-check again:"
                 print "Action: %s" %paras["action"]
                 print "Require parameter as follows" %args

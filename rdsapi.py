@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 # 执行前下载 aliyun open api sdk(https://pypi.python.org/pypi)
 # 修改endpoints.xml中的region_id和Rds域字段
@@ -22,7 +22,7 @@ from aliyunsdkrds.request.v20140815 import CreateUploadPathForSQLServerRequest
 from aliyunsdkrds.request.v20140815 import DescribeRegionsRequest
 from aliyunsdkrds.request.v20140815 import DescribeDBInstancesRequest
 from aliyunsdkrds.request.v20140815 import CreateReadOnlyDBInstanceRequest
-from AliClient import AliClient
+from aliclient import AliClient
 import MySQLdb as db
 import json
 import urllib

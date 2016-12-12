@@ -1,12 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
 import argparse
 import logging
-import os
-import logging
-from rdsapi import RDSClient
 import json
+import apiloader
 
 # 日志输出定义
 logging.basicConfig(level=logging.DEBUG,\
@@ -36,11 +34,8 @@ def getOptions(usage):
 if __name__=='__main__':
     args = getOptions("Open API command line tool")
     aliClient = None
-    if args["product"]=="rds":
-        aliClient = RDSClient(args["conf"])
-    else:
-        print "Not implemented product %s" %args["product"]
-        raise SystemExit
+    product = args["product"]
+    aliClient = apiloader.getObject(product+"api"+"."+product.upper()+"Client", args["conf"])
     paras = json.loads(args["parameters"])
     print paras
     aliClient.doAction(paras)

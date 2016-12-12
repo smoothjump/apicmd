@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 # 执行前下载 aliyun open api sdk(https://pypi.python.org/pypi)
 # 约定：所有执行action方法都需要以大写字母开头，调用参数与openapi名称一致
@@ -6,18 +6,11 @@
 
 from aliyunsdkcore import client
 import inspect
-import json
-import urllib
-import types
-import os
-import sys
-import time
-import argparse
 
 class AliClient(object):
     client_conf = {}
 
-    def __init__(self, confFile):
+    def __init__(self, confFile="rds.ini"):
         args = []
         with open(confFile) as conf:
             print "Loading private cloud configuration...."

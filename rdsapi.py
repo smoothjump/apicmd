@@ -34,6 +34,7 @@ import os
 import sys
 import time
 import csv
+import xlwt
 
 class RDSClient(AliClient):
     client_conf = {}
@@ -49,7 +50,6 @@ class RDSClient(AliClient):
         print s
 
     def DescribeSlowLogRecords(self, dbInstanceId, startTime, endTime, pageNumber):
-        pageNumber = 1
         request = DescribeSlowLogRecordsRequest.DescribeSlowLogRecordsRequest()
         request.set_accept_format('json')
         request.set_DBInstanceId(dbInstanceId)
@@ -96,24 +96,35 @@ class RDSClient(AliClient):
         request.set_DBInstaceStorage(storage)
         print self.clt.do_action(request)
 
-    def getSlowLogs(self, dbInstanceId, startTime, endTime, excelFile):
+    def getSlowLogs(self, dbInstanceId, startTime, endTime):
         reload(sys)
         sys.setdefaultencoding('utf-8')
         s = self.DescribeSlowLogRecords(dbInstanceId, startTime, endTime, 1)
-        if os.path.isfile(excelFile):
-            f = open(excelFile,"w")
-            totalPageCount = s["TotalRecordCount"]/30+1
-            for i in xrange(totalPageCount):
-                s= self.DescribeSlowLogRecords(dbInstanceId, startTime, endTime, i+1)
-                for record in s["Items"]["SQLSlowRecord"]:
-                    f.write(record["HostAddress"]+","\
-                        +record["DBName"]\
-                        +","+str(record["QueryTimes"])\
-                        +","+str(record["LockTimes"])\
-                        +","+record["ExecutionStartTime"]+"\n")\
-                        +","+record["SQLText"].replace("\r\n"," ")
-                f.flush()
-            f.close()
+        f = xlwt.Workbook()
+        j=0
+        table = f.add_sheet('slow_query',cell_overwrite_ok=True)
+        print "Dowloading slow query now, %d records in total" %(s["TotalRecordCount"])
+        totalPageCount = s["TotalRecordCount"]/30+1
+        table.write(j ,0,u"执行SQL用户及主机名")
+        table.write(j,1,u"数据库名称")
+        table.write(j,2,u"查询时长(秒)")
+        table.write(j,3,u'锁定时长(秒)')
+        table.write(j,4,u"开始执行时间")
+        table.write(j,5,u"SQL语句")
+        for i in xrange(totalPageCount):
+            s= self.DescribeSlowLogRecords(dbInstanceId, startTime, endTime, i+1)
+            j=i*30+1
+            for record in s["Items"]["SQLSlowRecord"]:
+            	table.write(j ,0,record["HostAddress"])
+            	table.write(j,1,record["DBName"])
+            	table.write(j,2,record["QueryTimes"])
+            	table.write(j,3,record["LockTimes"])
+            	table.write(j,4,record["ExecutionStartTime"])
+            	table.write(j,5,record["SQLText"])
+                j+=1
+            table.flush_row_data()
+        f.save("slow_query_"+dbInstanceId+".xls")
+        print "Download done, %d records in total" %(j-1)
 
 def downloadHook(block_read,block_size,total_size):
     if not block_read:
@@ -138,6 +149,21 @@ def dowloadFromURLs(urlList):
     else:
         print "Invalid argument!"
 
+def transfrom_json_to_csv(jsonString,csvFile):
+    CONTAINER_CSV_COLUMNS = ['HostAddress', 'StartTime', 'EndTime', 'ip', 'container_hostname',  
+                          'is_bigcontainer', 'mem_limit', 'cpu_shares', 'hostname', 'hostip', 'rack','zone'] 
+    CONTAINER_CSV_HEADERS = dict((n, n) for n in CONTAINER_CSV_COLUMNS)
+    CSVReader = csv.reader(open(containerArrangeFile,'rb'))
+    writer = csv.DictWriter(open(containerArrangeFilebak, 'w'), fieldnames=CONTAINER_CSV_COLUMNS)
+    writer.writerow(CONTAINER_CSV_HEADERS)
+    csvList = []
+    for row in CSVReader:
+        csvList.append(row)
+    csvList.sort(lambda x,y:cmp(x[11],y[11])) 
+    for line in csvList:
+        writer.writerow(dict(zip(CONTAINER_CSV_COLUMNS,line)))
+
 if __name__=="__main__":
     client = RDSClient("aliapi.ini")
-    client.getSlowLogs("rds7q8ziv2chbwmb8elcy","2016-12-15T12:00Z","2016-12-15T13:00Z","slowLogs.csv")
+    #print client.DescribeSlowLogRecords("rds7q8ziv2chbwmb8elcy","2016-12-15T12:00Z","2016-12-15T13:00Z",16)
+    client.getSlowLogs("rds7q8ziv2chbwmb8elcy","2016-12-15T12:00Z","2016-12-16T13:00Z")

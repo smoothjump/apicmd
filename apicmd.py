@@ -18,13 +18,13 @@ def getOptions(usage):
     parser = argparse.ArgumentParser(usage)
     parser.add_argument("-n", "--dryrun", action="store", help="dryrun")
     parser.add_argument("-j", "--json", dest = 'parameters', action="store",\
-        help="json string", default = "{\"action\":\"DescribeRegions\"}")
+        help="json string", default = "{\"action\":\"DescribeLoadBalancers\"}")
     parser.add_argument("-f", '--conf', dest = 'conf', action="store",\
         help="configuration file", default = "aliapi.ini")
     parser.add_argument("-o", "--ouput", dest = 'output', action="store",\
         help="outfile")
     parser.add_argument("-p", "--product", dest = 'product', action="store",\
-        help="outfile", default = "rds")
+        help="outfile", default = "slb")
     args = parser.parse_args()
     if not any(args.__dict__.values()):
         parser.print_help()
@@ -36,7 +36,10 @@ if __name__=='__main__':
     aliClient = None
     product = args["product"]
     aliClient = apiloader.getObject(product+"api"+"."+product.upper()+"Client", args["conf"])
-    paras = json.loads(args["parameters"])
-    print paras
-    aliClient.doAction(paras)
+    if aliClient is not None:
+        paras = json.loads(args["parameters"])
+        print paras
+        aliClient.doAction(paras)
+    else:
+        print "Open api tool for product \"%s\" has not yet implemented" %args["product"]
     

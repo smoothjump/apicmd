@@ -10,7 +10,7 @@ import inspect
 class AliClient(object):
     client_conf = {}
 
-    def __init__(self, confFile="rds.ini"):
+    def __init__(self, confFile):
         args = []
         with open(confFile) as conf:
             print "Loading private cloud configuration...."

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 import sys, types
-import rdsapi
 
 def _get_mod(modulePath):
     try:
@@ -30,10 +29,8 @@ def _get_func(fullFuncName):
         aFunc = getattr(aMod, funcName)
     except ImportError:
         print "No module named %s" %modPath
-        raise SystemExit
     except AttributeError:
         print "Module \"%s\" has no attribute named %s" %(modPath,funcName)
-        raise SystemExit
     # Return a reference to the function/class itself,
     # not the results of the function or instance of class.
     return aFunc
@@ -43,5 +40,9 @@ def applyFuc(obj,strFunc,arrArgs):
     return apply(objFunc,arrArgs)
 
 def getObject(fullClassName, *args, **kwargs):
-    clazz = _get_Class(fullClassName)
-    return clazz(*args, **kwargs)
+    clazz = _get_func(fullClassName)
+    if clazz:
+        inst = clazz(*args, **kwargs)
+    else:
+        inst = None
+    return inst

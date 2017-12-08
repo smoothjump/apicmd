@@ -2,7 +2,7 @@
 Aliyun API commandline tool
 
 ## 使用依赖
-1. 下载 aliyun open api sdk(https://pypi.python.org/pypi),运行环境python 2.7
+1. 下载 aliyun open api sdk(https://pypi.python.org/pypi), 运行环境python 2.7
 
 2. 修改endpoints.xml中的`region_id`和对应域字段后再执行`sudo python setup.py install`(具体Region ID查看CMDB)
 

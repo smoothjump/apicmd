@@ -24,17 +24,15 @@ from aliyunsdkrds.request.v20140815 import CreateUploadPathForSQLServerRequest
 from aliyunsdkrds.request.v20140815 import DescribeRegionsRequest
 from aliyunsdkrds.request.v20140815 import DescribeDBInstancesRequest
 from aliyunsdkrds.request.v20140815 import CreateReadOnlyDBInstanceRequest
-from aliyunsdkrds.request.v20140815 import DescribeSlowLogsRequest
 from aliyunsdkrds.request.v20140815 import DescribeSlowLogRecordsRequest
 from aliclient import AliClient
 import json
 import urllib
-import types
 import os
 import sys
-import time
 import csv
 import xlwt
+
 
 class RDSClient(AliClient):
     client_conf = {}
@@ -42,7 +40,7 @@ class RDSClient(AliClient):
     def __init__(self, confFile):
         super(RDSClient,self).__init__(confFile)
 
-    def DescribeDBInstance(self,dbInstanceId):
+    def DescribeDBInstance(self, dbInstanceId):
         request = DescribeDBInstanceAttributeRequest.DescribeDBInstanceAttributeRequest()
         request.set_accept_format('json')
         request.set_DBInstanceId(dbInstanceId)
@@ -58,7 +56,7 @@ class RDSClient(AliClient):
         request.set_PageNumber(pageNumber)
         return json.loads(self.clt.do_action(request))
 
-    def DescribeBackups(self,dbInstanceId,startTime,endTime):
+    def DescribeBackups(self, dbInstanceId, startTime, endTime):
         request = DescribeBackupsRequest.DescribeBackupsRequest()
         request.set_accept_format('json')
         request.set_DBInstanceId(dbInstanceId)
@@ -75,11 +73,11 @@ class RDSClient(AliClient):
         request.set_accept_format('json')
         print self.clt.do_action(request)
             
-    def CreateUploadPathForSQLServer(self, dbInstanceId,dbName):
+    def CreateUploadPathForSQLServer(self, dbInstanceId, dbName):
         request = CreateUploadPathForSQLServerRequest.CreateUploadPathForSQLServerRequest() 
         request.set_accept_format('json')
         request.set_DBInstanceId(dbInstanceId)
-        request.set_DBName(db_name)
+        request.set_DBName(dbName)
         print self.clt.do_action(request)
 
     def DescribeRegions(self):
@@ -87,13 +85,13 @@ class RDSClient(AliClient):
         request.set_accept_format('json')
         print self.clt.do_action(request)
 
-    def CreateReadOnlyDBInstance(self,dbInstanceId,dbInstanceClass,dbInstanceStorage,engineVersion="5.6"):
+    def CreateReadOnlyDBInstance(self, dbInstanceId, dbInstanceClass, dbInstanceStorage, engineVersion="5.6"):
         request = CreateReadOnlyDBInstanceRequest.CreateReadOnlyDBInstanceRequest()
         request.set_accept_format('json')
         request.set_DBInstanceId(dbInstanceId)
-        request.set_EngineVrsion(version)
-        request.set_DBInstanceClass(ins_cls)
-        request.set_DBInstaceStorage(storage)
+        request.set_EngineVrsion(engineVersion)
+        request.set_DBInstanceClass(dbInstanceClass)
+        request.set_DBInstaceStorage(dbInstanceStorage)
         print self.clt.do_action(request)
 
     def getSlowLogs(self, dbInstanceId, startTime, endTime):
@@ -115,41 +113,44 @@ class RDSClient(AliClient):
             s= self.DescribeSlowLogRecords(dbInstanceId, startTime, endTime, i+1)
             j=i*30+1
             for record in s["Items"]["SQLSlowRecord"]:
-            	table.write(j ,0,record["HostAddress"])
-            	table.write(j,1,record["DBName"])
-            	table.write(j,2,record["QueryTimes"])
-            	table.write(j,3,record["LockTimes"])
-            	table.write(j,4,record["ExecutionStartTime"])
-            	table.write(j,5,record["SQLText"])
-                j+=1
+                table.write(j, 0, record["HostAddress"])
+                table.write(j, 1, record["DBName"])
+                table.write(j, 2, record["QueryTimes"])
+                table.write(j, 3, record["LockTimes"])
+                table.write(j, 4, record["ExecutionStartTime"])
+                table.write(j, 5, record["SQLText"])
+                j += 1
             table.flush_row_data()
         f.save("slow_query_"+dbInstanceId+".xls")
         print "Download done, %d records in total" %(j-1)
 
-def downloadHook(block_read,block_size,total_size):
+
+def downloadHook(block_read, block_size, total_size):
     if not block_read:
         print "Download begins...";
         return
-    if total_size<0:
-    #unknown size
-        print "read %d blocks (%dbytes)" %(block_read,block_read*block_size);
+    if total_size < 0:
+        # unknown size
+        print "read %d blocks (%dbytes)" %(block_read, block_read*block_size)
     else:
-        amount_read=block_read*block_size;
-        print 'Read %d blocks,or %d/%d' %(block_read,block_read*block_size,total_size);
+        amount_read = block_read*block_size
+        print 'Read %d blocks,or %d/%d' %(block_read, block_read*block_size, total_size)
+
 
 def dowloadFromURLs(urlList):
-    if type(urlList)==type(u' '):
+    if isinstance(urlList, str):
         file_name = os.getcwd()+urlList.split("/")[-1].split('?')[0]
-        print "Download path: %s" %file_name
-        urllib.urlretrieve(urlList,file_name,reporthook=downloadHook)
-    elif type(urlList)==types.ListType:
+        print("Download path: %s" % file_name)
+        urllib.urlretrieve(urlList, file_name,reporthook=downloadHook)
+    elif isinstance(urlList, list):
         for url in urlList:
             file_name = os.getcwd()+url.split("/")[-1].split('?')[0]
-            urllib.urlretrieve(url,file_name,reporthook=downloadHook)
+            urllib.urlretrieve(url, file_name, reporthook=downloadHook)
     else:
         print "Invalid argument!"
 
-def transfrom_json_to_csv(jsonString,csvFile):
+
+def transformJsonToCsv(jsonString, csvFile):
     CONTAINER_CSV_COLUMNS = ['HostAddress', 'StartTime', 'EndTime', 'ip', 'container_hostname',  
                           'is_bigcontainer', 'mem_limit', 'cpu_shares', 'hostname', 'hostip', 'rack','zone'] 
     CONTAINER_CSV_HEADERS = dict((n, n) for n in CONTAINER_CSV_COLUMNS)
@@ -159,11 +160,13 @@ def transfrom_json_to_csv(jsonString,csvFile):
     csvList = []
     for row in CSVReader:
         csvList.append(row)
-    csvList.sort(lambda x,y:cmp(x[11],y[11])) 
+    csvList.sort(lambda x, y: cmp(x[11], y[11]))
     for line in csvList:
-        writer.writerow(dict(zip(CONTAINER_CSV_COLUMNS,line)))
+        writer.writerow(dict(zip(CONTAINER_CSV_COLUMNS, line)))
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     client = RDSClient("aliapi.ini")
-    #print client.DescribeSlowLogRecords("rds7q8ziv2chbwmb8elcy","2016-12-15T12:00Z","2016-12-15T13:00Z",16)
-    client.getSlowLogs("rds7q8ziv2chbwmb8elcy","2016-12-15T12:00Z","2016-12-16T13:00Z")
+    # print client.DescribeSlowLogRecords("rds7q8ziv2chbwmb8elcy","2016-12-15T12:00Z","2016-12-15T13:00Z",16)
+    # client.getSlowLogs("rds7q8ziv2cssshbwmb8elcy", "2016-12-15T12:00Z", "2016-12-16T13:00Z")
+    print(client.DescribeRegions())
